@@ -79,7 +79,7 @@ func TestWatchRedirectPreservesHeader(t *testing.T) {
 }
 
 func TestWatchHeartbeatTimeout(t *testing.T) {
-	var fb *Firebase
+	var fb Firebase
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		flusher, ok := w.(http.Flusher)
@@ -90,13 +90,13 @@ func TestWatchHeartbeatTimeout(t *testing.T) {
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		flusher.Flush()
-		time.Sleep(2 * fb.watchHeartbeat)
+		time.Sleep(2 * fb.(*firebase).watchHeartbeat)
 	}))
 	defer server.Close()
 
 	notifications := make(chan Event)
 	fb = New(server.URL, nil)
-	fb.watchHeartbeat = 50 * time.Millisecond
+	fb.(*firebase).watchHeartbeat = 50 * time.Millisecond
 
 	if err := fb.Watch(notifications); err != nil {
 		t.Fatal(err)

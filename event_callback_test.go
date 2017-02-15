@@ -47,7 +47,7 @@ func (te *testEvents) len() int {
 }
 
 func TestChildAddedReconnect(t *testing.T) {
-	var fb *Firebase
+	var fb Firebase
 
 	var count = new(int64)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -65,12 +65,11 @@ func TestChildAddedReconnect(t *testing.T) {
 			fmt.Fprintf(w, "event: put\ndata: %s\n\n", `{"path":"/goodbye", "data":"world"}`)
 		}
 		flusher.Flush()
-		time.Sleep(2 * fb.watchHeartbeat)
+		time.Sleep(2 * fb.(*firebase).watchHeartbeat)
 	}))
 	defer server.Close()
-
 	fb = New(server.URL, nil)
-	fb.watchHeartbeat = 50 * time.Millisecond
+	fb.(*firebase).watchHeartbeat = 50 * time.Millisecond
 
 	addNotifications := make(chan Event)
 	// use this to sync up between different events
@@ -157,7 +156,7 @@ func TestChildAdded(t *testing.T) {
 
 	fbChild, err := fb.Push("gaga oh la la")
 	require.NoError(t, err)
-	pushKey := strings.TrimPrefix(fbChild.url, fb.url+"/")
+	pushKey := strings.TrimPrefix(fbChild.(*firebase).url, fb.(*firebase).url+"/")
 	readNotification(t, allNotifications)
 	readNotification(t, addNotifications)
 
@@ -407,7 +406,7 @@ func TestRemoveEventFunc(t *testing.T) {
 	fb.Child("hello").Set(false)
 	readNotification(t, allNotifications)
 
-	assert.Len(t, fb.eventFuncs, 0)
+	assert.Len(t, fb.(*firebase).eventFuncs, 0)
 }
 
 func readNotification(t *testing.T, notification chan Event) {

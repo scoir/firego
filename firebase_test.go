@@ -15,8 +15,6 @@ import (
 
 const URL = "https://somefirebaseapp.firebaseIO.com"
 
-const authToken = "token"
-
 type TestServer struct {
 	*httptest.Server
 	receivedReqs []*http.Request
@@ -42,7 +40,7 @@ func TestNew(t *testing.T) {
 
 	for _, url := range testURLs {
 		fb := New(url, nil)
-		assert.Equal(t, URL, fb.url, "givenURL: %s", url)
+		assert.Equal(t, URL, fb.(*firebase).url, "givenURL: %s", url)
 	}
 }
 
@@ -59,8 +57,8 @@ func TestNewWithProvidedHttpClient(t *testing.T) {
 
 	for _, url := range testURLs {
 		fb := New(url, client)
-		assert.Equal(t, URL, fb.url, "givenURL: %s", url)
-		assert.Equal(t, client, fb.client)
+		assert.Equal(t, URL, fb.(*firebase).url, "givenURL: %s", url)
+		assert.Equal(t, client, fb.(*firebase).client)
 	}
 }
 
@@ -88,10 +86,31 @@ func TestUnauth(t *testing.T) {
 	server.RequireAuth(true)
 	fb := New(server.URL, nil)
 
-	fb.params.Add("auth", server.Secret)
+	fb.(*firebase).params.Add("auth", server.Secret)
 	fb.Unauth()
 	err := fb.Value("")
 	assert.Error(t, err)
+}
+
+func TestExists(t *testing.T) {
+	t.Parallel()
+	server := firetest.New()
+	server.Start()
+	defer server.Close()
+
+	fb := New(server.URL, nil)
+	// Test Exist on an empty ref
+	b, err := fb.Exists()
+	require.NoError(t, err)
+	assert.False(t, b)
+
+	//Test Exists on an non-empty ref
+	payload := map[string]interface{}{"foo": "bar"}
+	fb.Push(payload)
+	b, err = fb.Exists()
+	require.NoError(t, err)
+	assert.True(t, b)
+
 }
 
 func TestPush(t *testing.T) {
@@ -194,7 +213,7 @@ func TestChild(t *testing.T) {
 		child     = parent.Child(childNode)
 	)
 
-	assert.Equal(t, fmt.Sprintf("%s/%s", parent.url, childNode), child.url)
+	assert.Equal(t, fmt.Sprintf("%s/%s", parent.(*firebase).url, childNode), child.(*firebase).url)
 }
 
 func TestChild_Issue26(t *testing.T) {
@@ -204,41 +223,41 @@ func TestChild_Issue26(t *testing.T) {
 	child2 := child1.Child("two")
 
 	child1.Shallow(true)
-	assert.Len(t, child2.params, 0)
+	assert.Len(t, child2.(*firebase).params, 0)
 }
 
 func TestTimeoutDuration_Headers(t *testing.T) {
-	var fb *Firebase
+	var fb Firebase
 	done := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		time.Sleep(2 * fb.clientTimeout)
+		time.Sleep(2 * fb.(*firebase).clientTimeout)
 		close(done)
 	}))
 	defer server.Close()
 
 	fb = New(server.URL, nil)
-	fb.clientTimeout = time.Millisecond
+	fb.(*firebase).clientTimeout = time.Millisecond
 	err := fb.Value("")
 	<-done
 	assert.NotNil(t, err)
 	assert.IsType(t, ErrTimeout{}, err)
 
 	// ResponseHeaderTimeout should be TimeoutDuration less the time it took to dial, and should be positive
-	require.IsType(t, (*http.Transport)(nil), fb.client.Transport)
-	tr := fb.client.Transport.(*http.Transport)
+	require.IsType(t, (*http.Transport)(nil), fb.(*firebase).client.Transport)
+	tr := fb.(*firebase).client.Transport.(*http.Transport)
 	assert.True(t, tr.ResponseHeaderTimeout < TimeoutDuration)
 	assert.True(t, tr.ResponseHeaderTimeout > 0)
 }
 
 func TestTimeoutDuration_Dial(t *testing.T) {
 	fb := New("http://dialtimeouterr.or/", nil)
-	fb.clientTimeout = time.Millisecond
+	fb.(*firebase).clientTimeout = time.Millisecond
 
 	err := fb.Value("")
 	assert.NotNil(t, err)
 	assert.IsType(t, ErrTimeout{}, err)
 
 	// ResponseHeaderTimeout should be negative since the total duration was consumed when dialing
-	require.IsType(t, (*http.Transport)(nil), fb.client.Transport)
-	assert.True(t, fb.client.Transport.(*http.Transport).ResponseHeaderTimeout < 0)
+	require.IsType(t, (*http.Transport)(nil), fb.(*firebase).client.Transport)
+	assert.True(t, fb.(*firebase).client.Transport.(*http.Transport).ResponseHeaderTimeout < 0)
 }

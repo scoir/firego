@@ -51,7 +51,7 @@ func (e Event) Value(v interface{}) error {
 }
 
 // StopWatching stops tears down all connections that are watching.
-func (fb *Firebase) StopWatching() {
+func (fb *firebase) StopWatching() {
 	fb.watchMtx.Lock()
 	defer fb.watchMtx.Unlock()
 
@@ -63,7 +63,7 @@ func (fb *Firebase) StopWatching() {
 	}
 }
 
-func (fb *Firebase) setWatching(v bool) {
+func (fb *firebase) setWatching(v bool) {
 	fb.watchMtx.Lock()
 	fb.watching = v
 	fb.watchMtx.Unlock()
@@ -75,7 +75,7 @@ func (fb *Firebase) setWatching(v bool) {
 // Only one connection can be established at a time. The
 // second call to this function without a call to fb.StopWatching
 // will close the channel given and return nil immediately.
-func (fb *Firebase) Watch(notifications chan Event) error {
+func (fb *firebase) Watch(notifications chan Event) error {
 	fb.watchMtx.Lock()
 	if fb.watching {
 		fb.watchMtx.Unlock()
@@ -140,7 +140,7 @@ func readLine(rdr *bufio.Reader, prefix string) ([]byte, error) {
 	return bytes.TrimSpace(line), nil
 }
 
-func (fb *Firebase) watch(stop chan struct{}) (chan Event, error) {
+func (fb *firebase) watch(stop chan struct{}) (chan Event, error) {
 	// build SSE request
 	req, err := http.NewRequest("GET", fb.String(), nil)
 	if err != nil {

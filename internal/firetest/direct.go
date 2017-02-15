@@ -3,8 +3,9 @@ package firetest
 import (
 	"encoding/base64"
 	"fmt"
-	"sync/atomic"
 	"time"
+
+	"sync/atomic"
 
 	"github.com/zabawaba99/firego/sync"
 )

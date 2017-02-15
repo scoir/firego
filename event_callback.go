@@ -22,7 +22,7 @@ type ChildEventFunc func(snapshot DataSnapshot, previousChildKey string)
 // You cannot set the same function twice on a Firebase reference, if you do
 // the first function will be overridden and you will not be able to close the
 // connection.
-func (fb *Firebase) ChildAdded(fn ChildEventFunc) error {
+func (fb *firebase) ChildAdded(fn ChildEventFunc) error {
 	return fb.addEventFunc(fn, fn.childAdded)
 }
 
@@ -81,7 +81,7 @@ func (fn ChildEventFunc) childAdded(db *sync.Database, prevKey *string, notifica
 // You cannot set the same function twice on a Firebase reference, if you do
 // the first function will be overridden and you will not be able to close the
 // connection.
-func (fb *Firebase) ChildChanged(fn ChildEventFunc) error {
+func (fb *firebase) ChildChanged(fn ChildEventFunc) error {
 	return fb.addEventFunc(fn, fn.childChanged)
 }
 
@@ -148,7 +148,7 @@ func (fn ChildEventFunc) childChanged(db *sync.Database, prevKey *string, notifi
 // You cannot set the same function twice on a Firebase reference, if you do
 // the first function will be overridden and you will not be able to close the
 // connection.
-func (fb *Firebase) ChildRemoved(fn ChildEventFunc) error {
+func (fb *firebase) ChildRemoved(fn ChildEventFunc) error {
 	return fb.addEventFunc(fn, fn.childRemoved)
 }
 
@@ -215,7 +215,7 @@ func (fn ChildEventFunc) childRemoved(db *sync.Database, prevKey *string, notifi
 
 type handleSSEFunc func(*sync.Database, *string, chan Event) error
 
-func (fb *Firebase) addEventFunc(fn ChildEventFunc, handleSSE handleSSEFunc) error {
+func (fb *firebase) addEventFunc(fn ChildEventFunc, handleSSE handleSSEFunc) error {
 	fb.eventMtx.Lock()
 	defer fb.eventMtx.Unlock()
 
@@ -273,7 +273,7 @@ func (fb *Firebase) addEventFunc(fn ChildEventFunc, handleSSE handleSSEFunc) err
 
 // RemoveEventFunc removes the given function from the firebase
 // reference.
-func (fb *Firebase) RemoveEventFunc(fn ChildEventFunc) {
+func (fb *firebase) RemoveEventFunc(fn ChildEventFunc) {
 	fb.eventMtx.Lock()
 	defer fb.eventMtx.Unlock()
 
